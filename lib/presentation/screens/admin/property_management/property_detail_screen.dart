@@ -46,25 +46,26 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
   }
 
-Widget _buildRentHistorySection() {
+  Widget _buildRentHistorySection() {
     final propertyProvider = Provider.of<PropertyProvider>(context);
     final updatedProperty = propertyProvider.properties.firstWhere(
       (p) => p.id == widget.property.id,
       orElse: () => widget.property,
     );
 
-    final history = updatedProperty.flexibleRentHistory.entries.toList()
-      ..sort((a, b) {
-        // Handle Timestamp properly
-        final aTime = (a.value['timestamp'] as Timestamp?)?.toDate();
-        final bTime = (b.value['timestamp'] as Timestamp?)?.toDate();
-        if (aTime == null || bTime == null) return 0;
-        return bTime.compareTo(aTime);
-      });
+    final historyEntries = updatedProperty.flexibleRentHistory.entries.toList();
+
+    // Sort by timestamp descending (most recent first)
+    historyEntries.sort((a, b) {
+      final aTime = (a.value['timestamp'] as Timestamp?)?.toDate();
+      final bTime = (b.value['timestamp'] as Timestamp?)?.toDate();
+      if (aTime == null || bTime == null) return 0;
+      return bTime.compareTo(aTime);
+    });
 
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -86,15 +87,15 @@ Widget _buildRentHistorySection() {
                 'Base Rent: ${CurrencyUtils.formatCurrency(updatedProperty.baseRentAmount)}'),
             Text(
                 'Yearly Increase: ${updatedProperty.yearlyIncreasePercentage}%'),
-            if (history.isNotEmpty) ...[
+            if (historyEntries.isNotEmpty) ...[
               SizedBox(height: 8),
               Divider(),
               ListView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
-                itemCount: history.length,
+                itemCount: historyEntries.length,
                 itemBuilder: (context, index) {
-                  final entry = history[index];
+                  final entry = historyEntries[index];
                   final data = entry.value as Map<String, dynamic>;
                   final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
                   final reason =
@@ -115,7 +116,96 @@ Widget _buildRentHistorySection() {
         ),
       ),
     );
-}
+  }
+
+  // Widget _buildRentHistorySection() {
+  //   final propertyProvider = Provider.of<PropertyProvider>(context);
+  //   final updatedProperty = propertyProvider.properties.firstWhere(
+  //     (p) => p.id == widget.property.id,
+  //     orElse: () => widget.property,
+  //   );
+
+  //   // Extract and sort history entries, handling null safely
+  //   final historyEntries = updatedProperty.flexibleRentHistory.entries.toList();
+  //   historyEntries.sort((a, b) {
+  //     // Parse timestamps safely
+  //     final aTime = a.value is Map
+  //         ? (a.value['timestamp'] as Timestamp?)?.toDate()
+  //         : null;
+  //     final bTime = b.value is Map
+  //         ? (b.value['timestamp'] as Timestamp?)?.toDate()
+  //         : null;
+
+  //     if (aTime == null && bTime == null) return 0;
+  //     if (aTime == null) return 1;
+  //     if (bTime == null) return -1;
+  //     return bTime.compareTo(aTime);
+  //   });
+
+  //   return Card(
+  //     child: Padding(
+  //       padding: EdgeInsets.all(16),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               Text('Rent History',
+  //                   style: Theme.of(context).textTheme.titleLarge),
+  //               IconButton(
+  //                 icon: Icon(Icons.edit),
+  //                 onPressed: _showRentAdjustmentDialog,
+  //               ),
+  //             ],
+  //           ),
+  //           SizedBox(height: 8),
+  //           Text(
+  //               'Current Rent: ${CurrencyUtils.formatCurrency(updatedProperty.currentRentAmount)}'),
+  //           Text(
+  //               'Base Rent: ${CurrencyUtils.formatCurrency(updatedProperty.baseRentAmount)}'),
+  //           Text(
+  //               'Yearly Increase: ${updatedProperty.yearlyIncreasePercentage}%'),
+  //           if (historyEntries.isNotEmpty) ...[
+  //             SizedBox(height: 8),
+  //             Divider(),
+  //             ListView.builder(
+  //               shrinkWrap: true,
+  //               physics: NeverScrollableScrollPhysics(),
+  //               itemCount: historyEntries.length,
+  //               itemBuilder: (context, index) {
+  //                 final entry = historyEntries[index];
+  //                 if (!(entry.value is Map)) return SizedBox.shrink();
+
+  //                 final data = entry.value as Map<String, dynamic>;
+
+  //                 // Safely extract values with null checks and type casting
+  //                 final amount = data['amount'] is num
+  //                     ? (data['amount'] as num).toDouble()
+  //                     : 0.0;
+
+  //                 final reason =
+  //                     data['reason']?.toString() ?? 'No reason provided';
+  //                 final timestamp = data['timestamp'] is Timestamp
+  //                     ? (data['timestamp'] as Timestamp).toDate()
+  //                     : null;
+
+  //                 return ListTile(
+  //                   title: Text(CurrencyUtils.formatCurrency(amount)),
+  //                   subtitle: Text(reason),
+  //                   trailing: Text(timestamp != null
+  //                       ? DateFormat('MMM d, y').format(timestamp)
+  //                       : 'No date'),
+  //                 );
+  //               },
+  //             ),
+  //           ],
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
 // / Update _showRentAdjustmentDialog to handle nulls
   Future<void> _showRentAdjustmentDialog() async {
     final _amountController = TextEditingController();
@@ -162,6 +252,7 @@ Widget _buildRentHistorySection() {
                   await Provider.of<PropertyProvider>(context, listen: false)
                       .updateRentAmount(widget.property.id, newAmount, reason);
 
+                  // Refresh property data so that the UI reflects the latest rent history
                   await Provider.of<PropertyProvider>(context, listen: false)
                       .refreshProperty(widget.property.id);
 

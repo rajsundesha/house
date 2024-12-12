@@ -86,28 +86,26 @@ class PropertyRepository {
     }
   }
 
-
-Future<void> updateRentAmount(
+  Future<void> updateRentAmount(
       String propertyId, double newAmount, String reason) async {
     try {
-      final now = DateTime.now().toIso8601String();
       final propertyDoc = await _propertyCollection.doc(propertyId).get();
 
       if (propertyDoc.exists) {
         final currentData = propertyDoc.data() as Map<String, dynamic>;
-        final currentAmount =
-            (currentData['currentRentAmount'] ?? 0.0).toDouble();
+        final oldAmount = (currentData['currentRentAmount'] ?? 0.0).toDouble();
+        final nowKey = DateTime.now().millisecondsSinceEpoch.toString();
 
         final historyEntry = {
           'amount': newAmount.toDouble(),
           'reason': reason,
-          'previousAmount': currentAmount,
+          'previousAmount': oldAmount,
           'timestamp': FieldValue.serverTimestamp(),
         };
 
         await _propertyCollection.doc(propertyId).update({
           'currentRentAmount': newAmount.toDouble(),
-          'flexibleRentHistory.$now': historyEntry,
+          'flexibleRentHistory.$nowKey': historyEntry,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
@@ -116,6 +114,7 @@ Future<void> updateRentAmount(
       throw e;
     }
   }
+
   Future<void> deleteMaintenanceRecord(
       String propertyId, MaintenanceRecord record) async {
     await _propertyCollection.doc(propertyId).update({

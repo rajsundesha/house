@@ -160,14 +160,15 @@ class Property {
   }
 
   void updateRentAmount(double newAmount, String reason) {
+    final oldAmount = currentRentAmount;
     currentRentAmount = newAmount;
-    final now = DateTime.now().toIso8601String();
-    flexibleRentHistory[now] = {
+    final nowKey = DateTime.now().millisecondsSinceEpoch.toString();
+
+    flexibleRentHistory[nowKey] = {
       'amount': newAmount,
       'reason': reason,
-      'previousAmount': currentRentAmount,
-      'timestamp':
-          Timestamp.fromDate(DateTime.now()), // Use Timestamp instead of string
+      'previousAmount': oldAmount,
+      'timestamp': Timestamp.fromDate(DateTime.now()),
     };
   }
 
