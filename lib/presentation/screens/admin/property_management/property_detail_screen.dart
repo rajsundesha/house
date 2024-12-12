@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -45,16 +46,21 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
   }
 
-
 Widget _buildRentHistorySection() {
     final propertyProvider = Provider.of<PropertyProvider>(context);
     final updatedProperty = propertyProvider.properties.firstWhere(
       (p) => p.id == widget.property.id,
       orElse: () => widget.property,
-    ) as Property;
+    );
 
     final history = updatedProperty.flexibleRentHistory.entries.toList()
-      ..sort((a, b) => DateTime.parse(b.key).compareTo(DateTime.parse(a.key)));
+      ..sort((a, b) {
+        // Handle Timestamp properly
+        final aTime = (a.value['timestamp'] as Timestamp?)?.toDate();
+        final bTime = (b.value['timestamp'] as Timestamp?)?.toDate();
+        if (aTime == null || bTime == null) return 0;
+        return bTime.compareTo(aTime);
+      });
 
     return Card(
       child: Padding(
@@ -89,20 +95,18 @@ Widget _buildRentHistorySection() {
                 itemCount: history.length,
                 itemBuilder: (context, index) {
                   final entry = history[index];
-                  final date = DateTime.parse(entry.key);
                   final data = entry.value as Map<String, dynamic>;
-
-                  // Safe access to amount with null checking and type casting
-                  final amount = (data['amount'] is num)
-                      ? (data['amount'] as num).toDouble()
-                      : 0.0;
+                  final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
                   final reason =
-                      data['reason']?.toString() ?? 'No reason provided';
+                      data['reason'] as String? ?? 'No reason provided';
+                  final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
 
                   return ListTile(
                     title: Text(CurrencyUtils.formatCurrency(amount)),
                     subtitle: Text(reason),
-                    trailing: Text(DateFormat('MMM d, y').format(date)),
+                    trailing: Text(timestamp != null
+                        ? DateFormat('MMM d, y').format(timestamp)
+                        : 'No date'),
                   );
                 },
               ),
@@ -111,8 +115,8 @@ Widget _buildRentHistorySection() {
         ),
       ),
     );
-  }
-// Update _showRentAdjustmentDialog to handle nulls
+}
+// / Update _showRentAdjustmentDialog to handle nulls
   Future<void> _showRentAdjustmentDialog() async {
     final _amountController = TextEditingController();
     final _reasonController = TextEditingController();

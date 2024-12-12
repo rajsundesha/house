@@ -89,7 +89,18 @@ class Property {
         maintenanceRecords = maintenanceRecords ?? [],
         flexibleRentHistory = flexibleRentHistory ?? {};
 
+  // factory Property.fromMap(Map<String, dynamic> data, String documentId) {
   factory Property.fromMap(Map<String, dynamic> data, String documentId) {
+    Map<String, dynamic> rentHistory = {};
+    if (data['flexibleRentHistory'] != null) {
+      try {
+        rentHistory = Map<String, dynamic>.from(
+            data['flexibleRentHistory'] as Map<dynamic, dynamic>? ?? {});
+      } catch (e) {
+        print('Error parsing rent history: $e');
+        rentHistory = {};
+      }
+    }
     return Property(
       id: documentId,
       address: data['address'] ?? '',
