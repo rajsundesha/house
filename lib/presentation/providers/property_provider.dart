@@ -202,12 +202,20 @@ class PropertyProvider with ChangeNotifier {
       String propertyId, double newAmount, String reason) async {
     try {
       await _propertyRepository.updateRentAmount(propertyId, newAmount, reason);
-      int index = _properties.indexWhere((p) => p.id == propertyId);
-      if (index != -1) {
-        _properties[index].updateRentAmount(newAmount, reason);
+
+      final propertyIndex = _properties.indexWhere((p) => p.id == propertyId);
+      if (propertyIndex != -1) {
+        final property = _properties[propertyIndex];
+        property.updateRentAmount(newAmount, reason);
+
+        // Create new property instance with updated values
+        _properties[propertyIndex] = property;
+
+        // Update selected property if needed
         if (_selectedProperty?.id == propertyId) {
-          _selectedProperty!.updateRentAmount(newAmount, reason);
+          _selectedProperty = property;
         }
+
         notifyListeners();
       }
     } catch (e) {

@@ -149,16 +149,15 @@ class Property {
   }
 
   void updateRentAmount(double newAmount, String reason) {
+    currentRentAmount = newAmount;
     final now = DateTime.now().toIso8601String();
-    final historyEntry = {
+    flexibleRentHistory[now] = {
       'amount': newAmount,
       'reason': reason,
       'previousAmount': currentRentAmount,
-      'timestamp': now,
+      'timestamp':
+          Timestamp.fromDate(DateTime.now()), // Use Timestamp instead of string
     };
-
-    currentRentAmount = newAmount;
-    flexibleRentHistory[now] = historyEntry;
   }
 
   Property copyWith({
