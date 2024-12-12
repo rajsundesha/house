@@ -46,11 +46,12 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   }
 
 
-  Widget _buildRentHistorySection() {
+Widget _buildRentHistorySection() {
     final propertyProvider = Provider.of<PropertyProvider>(context);
-    // Get the latest property data
-    final updatedProperty =
-        propertyProvider.getPropertyById(widget.property.id) ?? widget.property;
+    final updatedProperty = propertyProvider.properties.firstWhere(
+      (p) => p.id == widget.property.id,
+      orElse: () => widget.property,
+    ) as Property;
 
     final history = updatedProperty.flexibleRentHistory.entries.toList()
       ..sort((a, b) => DateTime.parse(b.key).compareTo(DateTime.parse(a.key)));
@@ -90,10 +91,17 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   final entry = history[index];
                   final date = DateTime.parse(entry.key);
                   final data = entry.value as Map<String, dynamic>;
+
+                  // Safe access to amount with null checking and type casting
+                  final amount = (data['amount'] is num)
+                      ? (data['amount'] as num).toDouble()
+                      : 0.0;
+                  final reason =
+                      data['reason']?.toString() ?? 'No reason provided';
+
                   return ListTile(
-                    title: Text(CurrencyUtils.formatCurrency(
-                        (data['amount'] as num).toDouble())),
-                    subtitle: Text(data['reason'] ?? 'No reason provided'),
+                    title: Text(CurrencyUtils.formatCurrency(amount)),
+                    subtitle: Text(reason),
                     trailing: Text(DateFormat('MMM d, y').format(date)),
                   );
                 },

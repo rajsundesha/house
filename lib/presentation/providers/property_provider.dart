@@ -139,15 +139,15 @@ class PropertyProvider with ChangeNotifier {
     }
   }
 
-  // Add the missing method
-  Future<Property?> getPropertyById(String propertyId) async {
-    try {
-      return await _propertyRepository.getPropertyById(propertyId);
-    } catch (e) {
-      _error = e.toString();
-      throw e;
-    }
-  }
+  // // Add the missing method
+  // Future<Property?> getPropertyById(String propertyId) async {
+  //   try {
+  //     return await _propertyRepository.getPropertyById(propertyId);
+  //   } catch (e) {
+  //     _error = e.toString();
+  //     throw e;
+  //   }
+  // }
 
   Future<void> updateProperty(Property property) async {
     try {
@@ -329,6 +329,18 @@ class PropertyProvider with ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       return [];
+    }
+  }
+
+  // If you need to get a specific property
+  Property? getPropertyById(String propertyId) {
+    try {
+      return _properties.firstWhere(
+        (property) => property.id == propertyId,
+      );
+    } catch (e) {
+      print('Error getting property by ID: $e');
+      return null;
     }
   }
 
